@@ -1,0 +1,21 @@
+configfile: "config/config.yml"
+
+include: "rules/common.smk"
+include: "rules/download.smk"
+include: "rules/extract.smk"
+include: "rules/aggregate.smk"
+
+localrules: all, download_stacks, extract, aggregate, aggregate_sources
+
+rule all:
+    input: "results/aggregated/aggregate.txt"
+
+rule aggregate:
+    input:
+        # expand("results/extraction/{sample}/single_cells.h5", sample=samplessamples.id)
+        expand("results/aggregated/{source}/{source}.h5", source=sources),
+        expand("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation", source=sources)
+    output:
+        "results/aggregated/aggregate.txt"
+    shell:
+        "echo {input} > {output}"

@@ -1,0 +1,7 @@
+cores: 20
+use-conda: True
+keep-incomplete: True
+rerun-incomplete: True
+resources:
+  vram_mb: 15000
+  mem_mb: 100000

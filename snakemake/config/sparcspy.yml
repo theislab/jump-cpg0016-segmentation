@@ -1,0 +1,27 @@
+input_channels: 5
+
+Cytosol_Cellpose_BatchSegmentation:
+  chunk_size: 50 # chunk size for chunked HDF5 storage
+  output_masks: 2
+  lower_quantile_normalization: 0.001
+  upper_quantile_normalization: 0.999
+  median_filter_size: 4 # Size in pixels
+  filtering_threshold: 0.05
+  nucleus_segmentation:
+    model: "nuclei"
+    batch_size: 500
+    diameter: 30
+  cytosol_segmentation:
+    model: "cyto2"
+    batch_size: 500
+    diameter: 80
+  cache: "."
+
+TimecourseHDF5CellExtraction:
+  compression: True
+  threads: 80 # threads used in multithreading
+  image_size: 150 # image size in pixel
+  hdf5_rdcc_nbytes: 5242880000 # 5gb 1024 * 1024 * 5000
+  hdf5_rdcc_w0: 1
+  hdf5_rdcc_nslots: 50000
+  cache: "."

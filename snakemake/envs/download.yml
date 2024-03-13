@@ -1,0 +1,11 @@
+name: download
+channels:
+  - conda-forge
+dependencies:
+  - boto3
+  - numpy
+  - tqdm
+  - tifffile
+  - cffi
+  - pandas
+  - fastparquet

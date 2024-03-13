@@ -1,0 +1,28 @@
+name: segment
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.9
+  - scipy
+  - scikit-image
+  - scikit-fmm
+  - cellpose
+  - opencv
+  - numba
+  - mahotas
+  - cffi
+  - paramiko
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=11.8
+  - fsspec<2023.9.0
+  - fastparquet
+  - git
+  - pip
+  - pip:
+      - imagesize
+      - git+https://github.com/npeschke/SPARCSpy.git@820ae092bf1b0de6c486a36499b24f7b874c87fa
+      - git+https://github.com/MannLabs/py-lmd

@@ -1,0 +1,32 @@
+samples_meta: "config/selected_metadata.parquet"
+#dl_json: "config/samples.json"
+
+#channels: ["OrigAGP", "OrigDNA", "OrigER", "OrigMito", "OrigRNA"]
+
+#plate_link: "https://github.com/jump-cellpainting/datasets/raw/main/metadata/plate.csv.gz"
+#well_link: "https://github.com/jump-cellpainting/datasets/raw/main/metadata/well.csv.gz"
+
+#sample_whitelist:
+#  - Metadata_Source: "source_8"
+#    Metadata_Plate: "A1166127"
+#    Metadata_Well: "A01"
+#  - Metadata_Source: "source_8"
+#    Metadata_Plate: "A1170398"
+#    Metadata_Well: "A01"
+#
+#samples:
+#  source8__A1166127__A01__s1:
+#    Metadata_Source: "source_8"
+#    Metadata_Plate: "A1166127"
+#    Metadata_Well: "A01"
+#  source8__A1170398__A01__s1:
+#    Metadata_Source: "source_8"
+#    Metadata_Plate: "A1170398"
+#    Metadata_Well: "A01"
+#sample_blacklist:
+#  - Metadata_Source: "source_8"
+#    Metadata_Plate: "A1166127"
+#    Metadata_Well: "A01"
+#  - Metadata_Source: "source_8"
+#    Metadata_Plate: "A1170398"
+#    Metadata_Well: "A01"

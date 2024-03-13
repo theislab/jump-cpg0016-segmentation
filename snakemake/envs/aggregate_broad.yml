@@ -1,0 +1,7 @@
+name: aggregate_sources
+channels:
+  - conda-forge
+dependencies:
+  - h5py
+  - numpy
+  - ome-zarr
