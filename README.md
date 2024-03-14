@@ -8,7 +8,7 @@ The Carpenter-Singh lab at the Broad institute has recently published the [cpg00
 - [Running](#running)
 
 ## Installation
-1. Install snakmake via mamba as described [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html#full-installation)
+1. Install snakemake via mamba as described [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html#full-installation)
 2. Install boto3, tqdm, pandas and pandarallel in the environment
     - `mamba activate snakemake`
     - `mamba install boto3 tqdm pandas pandarallel pyarrow`
