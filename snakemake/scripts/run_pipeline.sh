@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the path to the Conda environments as a constant
-CONDA_ENV_PATH="/lustre/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs"
+CONDA_ENV_PATH="/your/favorite/path/to/conda/envs"
 
 # Generate a timestamp
 timestamp=$(date +"%Y%m%d%H%M")
