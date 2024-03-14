@@ -38,14 +38,6 @@ def _aggregate(
                 sample_index_map = _get_sample_index_map(batch_file, source_group)
                 _fill_out_file(batch_file, sample_index_map)
 
-    # For debugging and inspection
-    # import matplotlib.pyplot as plt
-    # with h5py.File(output, "r") as out_file:
-    #     h5_path = ("source_2/ZGRWVQNYTFGQLL-UHFFFAOYSA-N/"
-    #                "source_2__20210607_Batch_2__1053601879__K06__1/single_cell_data")
-    #     plt.imshow(out_file[h5_path][0, 4, ...])
-    #     plt.show()
-
 
 def _fill_out_file(batch_file: h5py.File, sample_index_map: dict[h5py.Group, list[int]]):
     dataset_names = ["single_cell_data", "single_cell_index"]
@@ -146,63 +138,4 @@ def main(snakemake):
 if __name__ == "__main__":
     if "snakemake" in locals():
         main(locals()["snakemake"])
-    else:
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-            datefmt="%d.%m.%y %H:%M:%S",
-        )
-        # input_paths = [
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__1/source_2__20210607_Batch_2__1053601879__K06__1.h5",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__2/source_2__20210607_Batch_2__1053601879__K06__2.h5",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__3/source_2__20210607_Batch_2__1053601879__K06__3.h5",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__4/source_2__20210607_Batch_2__1053601879__K06__4.h5",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__5/source_2__20210607_Batch_2__1053601879__K06__5.h5",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__6/source_2__20210607_Batch_2__1053601879__K06__6.h5",
-        # ]
-        # status_paths = [
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__1/segmentation_status.txt",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__2/segmentation_status.txt",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__3/segmentation_status.txt",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__4/segmentation_status.txt",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__5/segmentation_status.txt",
-        #     "results/extraction/source_2/source_2__20210607_Batch_2__1053601879__K06__6/segmentation_status.txt",
-        # ]
-
-        # input_paths = ["results/extraction/source_2/source_2__1053600674/extracted_single_cells.h5"]
-        # input_paths = [
-        #     "results/extraction/source_2/source_2__1053600674/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1053599503/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1053597936/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086293911/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086293492/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086293133/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086292884/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086292389/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086292037/extracted_single_cells.h5",
-        #     "results/extraction/source_2/source_2__1086289686/extracted_single_cells.h5",
-        # ]
-        input_paths = [
-            "results/extraction/source_5/source_5_snakemake_batch_0/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_1/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_2/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_3/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_4/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_5/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_6/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_7/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_8/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_9/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_10/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_11/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_12/extracted_single_cells.h5",
-            "results/extraction/source_5/source_5_snakemake_batch_13/extracted_single_cells.h5",
-        ]
-        h5_path = "results/aggregated/source_5/source_5.h5"
-        wildcard_source = "source_5"
-        # inchi_key = "ZGRWVQNYTFGQLL-UHFFFAOYSA-N"
-        _aggregate(
-            batches=input_paths,
-            source=wildcard_source,
-            output=h5_path,
-        )
+    

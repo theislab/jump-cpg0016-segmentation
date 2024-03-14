@@ -24,13 +24,10 @@ def _write_segmentation_status_file(path: pl.Path, success: bool = True):
 
 
 def _segment(input_path: str, project_dir: str, config_path: str, debug: bool = False):
-    # module_logger.info(f"Segmentation for image {input_path}")
-    # module_logger.info(f"Project directory: {project_dir}")
 
     sparcs_project = project.Project(
         location_path=project_dir,
         config_path=config_path,
-        # segmentation_f=workflows.DAPISegmentationCellpose,
         segmentation_f=workflows.CytosolSegmentationCellpose,
         extraction_f=extraction.HDF5CellExtraction,
         debug=False,
@@ -115,8 +112,6 @@ if __name__ == "__main__":
             handler.addFilter(NumbaLogFilter())
 
         sample = "source_10__2021_08_17_U2OS_48_hr_run16__Dest210809-141456__K06__3"
-        # # Sample with no cells for testing error handling:
-        # sample = "source_10__2021_08_03_U2OS_48_hr_run12__Dest210726-160150__L06__6"
         _segment(
             input_path=f"../results/images/{sample}.tif",
             project_dir=f"../results/segmentation/{sample}",

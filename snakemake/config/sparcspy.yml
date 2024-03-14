@@ -10,11 +10,11 @@ Cytosol_Cellpose_BatchSegmentation:
   nucleus_segmentation:
     model: "nuclei"
     batch_size: 500
-    diameter: 30
+    diameter: 21
   cytosol_segmentation:
     model: "cyto2"
     batch_size: 500
-    diameter: 80
+    diameter: 53
   cache: "."
 
 TimecourseHDF5CellExtraction:
