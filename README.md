@@ -3,16 +3,35 @@ The Carpenter-Singh lab at the Broad institute has recently published the [cpg00
 
 ## Table of Contents
 
-- [Installation](#install)
-- [Usage](#usage)
-- [License](#license)
+- [Installation](#installation)
+- [Setup](#setup)
+- [Running](#running)
 
 ## Installation
 1. Install snakmake via mamba as described [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html#full-installation)
 2. Install boto3, tqdm, pandas and pandarallel in the environment
     - `mamba activate snakemake`
     - `mamba install boto3 tqdm pandas pandarallel pyarrow`
-3. Select samples from JUMP that you want to download and process.
+
+## Setup
+To actually run the pipeline, we first have to specifiy which samples we want to include. This is done with a `samples.json` file that looks as follows:
+```json
+{
+    "samples": [
+        {
+            "Metadata_InChIKey": "ZGRWVQNYTFGQLL-UHFFFAOYSA-N"
+        },
+        {
+            "Metadata_Source": "source_2",
+            "Metadata_Plate": "1053601879"
+        }
+    ]
+}
+```
+In this example, it would select all samples with the InChIKey `ZGRWVQNYTFGQLL-UHFFFAOYSA-N` and additionally all samples that are both source `source_2` and plate `1053601879`.
+
+The logic to generate these is as follows:
+1. Select samples from JUMP that you want to download and process.
     - You can select by the following JUMP metadata columns:
         - Metadata_Source
         - Metadata_Batch
@@ -25,11 +44,20 @@ The Carpenter-Singh lab at the Broad institute has recently published the [cpg00
         - Each filter in the "samples" list is its own individual filter and resulting samples are added in the end
         - Each metadata column condition in a filter must be fulfilled to return a sample.
         - In `notebooks/generate_example_config.jpynb` we provide examples on how to programmatically generate such a config file.
-4. Download metadata for your samples
+2. Once specified, we need to download the metadata for the desired samples which is then used during the pipeline.
     - run `python snakemake/scripts/dl.py`
-5. Run the snakemake workflow
-    - run the pipeline, for example using the script in `snakemake/scripts/run_pipeline.sh`. You can optionally specify a directory in which the conda environments for the individual jobs will be created (recommended for debugging purposes).
-    - Please adapt number of available cores and GPUs to your particular machine
+
+## Running
+- Running the pipeline follows standard snakemake logic, for example using the script in `snakemake/scripts/run_pipeline.sh`. You can optionally specify a directory in which the conda environments for the individual jobs will be created (recommended for debugging purposes).
+- Please adapt number of available cores and GPUs to your particular machine. 
+
+## Further info
+The ID is created by joining with double underscores. The `Metadata_*` are columns in the metadata tables of JUMP.
+
+```python
+f"{row['Metadata_Source']}__{row['Metadata_Batch']}__{row['Metadata_Plate']}__{row['Metadata_Well']}__{row['Metadata_Site']}"
+```
+
 
 ## License
 MIT License
