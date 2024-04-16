@@ -452,7 +452,6 @@ class JumpDl(JumpMeta):
             parquet_paths.append(parquet_path)
             if not parquet_path.is_file():
                 s3_path = self._get_parquet_url(*plate_id)
-                # self.s3_get(s3_path, parquet_path)
                 download_paths.append((s3_path, parquet_path))
 
         parallel_s3_dl(download_paths, self._n_download_processes)
