@@ -658,3 +658,17 @@ def generate_batch_ids(metadata: pd.DataFrame, batch_size: int = 250) -> list[st
 if __name__ == "__main__":
     if "snakemake" in locals():
         main(locals()["snakemake"])
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+            datefmt="%d.%m.%y %H:%M:%S",
+        )
+        dl = JumpDl(jump_dir=pl.Path("../results/"))
+        whitelist = pl.Path("../config/samples.json")
+        if whitelist.exists():
+            dl.whitelist_samples_from_json(whitelist)
+        dl.download_metadata()
+        dl.export_meta("../config/selected_metadata.parquet")
+
+        print("completed")
