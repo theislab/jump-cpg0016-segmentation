@@ -104,6 +104,8 @@ class JumpConfig:
 
     def _set_image_types(self):
         self._itypes = ["AGP", "DNA", "ER", "Mito", "RNA"]
+        # self._imodalities = ["Illum", "Orig"]
+        # self.image_types = [f"{modality}{itype}" for itype in self._itypes for modality in self._imodalities]
         self.image_types = [f"Orig{itype}" for itype in self._itypes]
 
     def _setup_dirs(self, jump_dir):
@@ -222,6 +224,8 @@ class JumpMeta(JumpConfig):
 
         self.meta = pd.merge(self.plate, self.well, on=["Metadata_Source", "Metadata_Plate"])
         self.meta = pd.merge(self.meta, self.compound, on="Metadata_JCP2022", how="inner")
+        # self.meta = self.meta.merge(self.compound, how="outer", on=["Metadata_JCP2022"])
+        # self.meta = self.meta.merge(self.orf, how="outer", on=["Metadata_JCP2022"])
         self.meta.reset_index(drop=True)
 
     def whitelist_samples_from_json(self, path: pl.Path):
@@ -333,6 +337,10 @@ class JumpMeta(JumpConfig):
         well = row["Metadata_Well"]
         return source, batch, plate, well
 
+    # @staticmethod
+    # def get_id_string(row):
+    #     return f"{row['Metadata_Source']}__{row['Metadata_Batch']}__{row['Metadata_Plate']}__{row['Metadata_Well']}__{row['Metadata_Site']}"
+
     def path_from_id(self, source, batch, plate, well=None):
         """
         Builds a filesystem path relative to jump_dir for the specific plate/well
@@ -384,6 +392,7 @@ class JumpDl(JumpMeta):
         -------
         Nothing
         """
+        # from tqdm import tqdm
 
         self.download_metadata()
 
@@ -445,6 +454,8 @@ class JumpDl(JumpMeta):
         load_data_index = ["Metadata_Source", "Metadata_Batch", "Metadata_Plate"]
         plates = self._selected_meta.set_index(load_data_index, drop=False).index.unique().to_list()
 
+        # for _, row in self._selected_meta.iterrows():
+        #     row_id = self.id_from_row(row)
         download_paths = []
         parquet_paths = []
         for plate_id in tqdm(plates, total=len(plates)):
@@ -452,6 +463,7 @@ class JumpDl(JumpMeta):
             parquet_paths.append(parquet_path)
             if not parquet_path.is_file():
                 s3_path = self._get_parquet_url(*plate_id)
+                # self.s3_get(s3_path, parquet_path)
                 download_paths.append((s3_path, parquet_path))
 
         parallel_s3_dl(download_paths, self._n_download_processes)
@@ -460,6 +472,7 @@ class JumpDl(JumpMeta):
 
         columns = ["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"]
         self._selected_meta = self._selected_meta.merge(load_data, how="inner", on=columns)
+        # self._selected_meta.apply(id=lambda x: f"{x['Metadata_Source']}__{x['Metadata_Batch']}__{x['Metadata_Plate']}__{x['Metadata_Well']}__{x['Metadata_Site']}")
 
         pandarallel.initialize(progress_bar=True)
         self._selected_meta = self._selected_meta.parallel_apply(self.add_id_col, axis=1)
@@ -467,6 +480,10 @@ class JumpDl(JumpMeta):
             self._selected_meta = self._selected_meta.parallel_apply(self.add_s3_col, axis=1, channel=channel)
 
         snakemake_batch_column = "snakemake_batch"
+        # self._selected_meta[snakemake_batch_column] = [
+        #     f"{source}__{plate}"
+        #     for source, plate in zip(self._selected_meta["Metadata_Source"], self._selected_meta["Metadata_Plate"])
+        # ]
 
         self._selected_meta[snakemake_batch_column] = generate_batch_ids(batch_size=250, metadata=self._selected_meta)
 
@@ -658,3 +675,20 @@ def generate_batch_ids(metadata: pd.DataFrame, batch_size: int = 250) -> list[st
 if __name__ == "__main__":
     if "snakemake" in locals():
         main(locals()["snakemake"])
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+            datefmt="%d.%m.%y %H:%M:%S",
+        )
+        dl = JumpDl(jump_dir=pl.Path("../results/"))
+        # dl.select_samples(Metadata_Source="source_8", Metadata_Plate="A1166127")
+        whitelist = pl.Path("../config/samples.json")
+        # whitelist = pl.Path("../config/large_samples/samples100.json")
+        if whitelist.exists():
+            dl.whitelist_samples_from_json(whitelist)
+        # dl.download_samples()
+        dl.download_metadata()
+        dl.export_meta("../config/selected_metadata.parquet")
+
+        print("completed")
