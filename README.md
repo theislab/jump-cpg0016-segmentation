@@ -1,5 +1,5 @@
 ## Segmentation of JUMP cpg0016
-The Carpenter-Singh lab at the Broad institute has recently published the [cpg0016 dataset in which a vast amount of Cell Painting data in response to more than 100k  perturbation was generated](https://github.com/jump-cellpainting/2024_Chandrasekaran_NatureMethods). For current and future downstream ML/DL applications, we have segmented the resulting images and are in the process of uploading them to the Broad's infrastrucutre. This repository holds the pipeline used for the segmentation and makes it available for inspection and reuse.
+The Carpenter-Singh lab at the Broad Institute has recently published the [cpg0016 dataset in which a vast amount of Cell Painting data in response to more than 100k  perturbation was generated](https://github.com/jump-cellpainting/2024_Chandrasekaran_NatureMethods). For current and future downstream ML/DL applications, we have segmented the resulting images and are in the process of uploading them to the Broad's infrastructure. This repository holds the pipeline used for the segmentation and makes it available for inspection and reuse.
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@ The Carpenter-Singh lab at the Broad institute has recently published the [cpg00
     - `mamba install boto3 tqdm pandas pandarallel pyarrow`
 
 ## Setup
-To actually run the pipeline, we first have to specifiy which samples we want to include. This is done with a `samples.json` file that looks as follows:
+Running the pipeline is fairly easy once the Python environment is set up since the Cell Painting Gallery is hosted in a way that requires no user accounts, or authentication, and therefore allows the anonymous client of the pipeline to freely download images. When ready, we first have to specify which samples we want to include. This is done with a `samples.json` file that looks as follows:
 ```json
 {
     "samples": [
@@ -48,8 +48,8 @@ The logic to generate these is as follows:
     - run `python snakemake/scripts/dl.py`
 
 ## Running
-- Running the pipeline follows standard snakemake logic, for example using the script in `snakemake/scripts/run_pipeline.sh`. You can optionally specify a directory in which the conda environments for the individual jobs will be created (recommended for debugging purposes).
-- Please adapt number of available cores and GPUs to your particular machine. 
+- Running the pipeline follows standard snakemake logic, for example, using the script in `snakemake/scripts/run_pipeline.sh`. You can optionally specify a directory in which the conda environments for the individual jobs will be created (recommended for debugging purposes).
+- Please adapt the number of available cores and GPUs to your particular machine. 
 
 ## Further info
 The ID is created by joining with double underscores. The `Metadata_*` are columns in the metadata tables of JUMP.
