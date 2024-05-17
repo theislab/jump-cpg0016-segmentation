@@ -15,17 +15,16 @@ rule create_broad_structure:
         extraction_batches=get_extracted_batches,
         segmentation_batches=get_segmentation_batches
     output:
-        broad_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation")
+        broad_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation"),
         checkpoint="results/checkpoints/create_broad_structure/{source}.ckpt"
-    
     conda: "../envs/aggregate_broad.yml"
     script: "../scripts/create_broad_structure.py"
     
 
 rule aggregate_broad_batch:
     input: 
-        extraction_path="results/extraction/{source}/{batch}/extracted_single_cells.h5"
-        segmentation_path="results/segmentation/{source}/{batch}/input_segmentation.h5"
+        extraction_path="results/extraction/{source}/{batch}/extracted_single_cells.h5",
+        segmentation_path="results/segmentation/{source}/{batch}/input_segmentation.h5",
         broad_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation")
     output:
         checkpoint="results/checkpoints/aggregate_broad_batch/{source}/{batch}.ckpt"
