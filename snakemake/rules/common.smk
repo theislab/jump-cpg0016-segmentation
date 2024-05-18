@@ -18,7 +18,7 @@ import pandas as pd
 samples = pd.read_parquet(config["samples_meta"])
 sources = samples["Metadata_Source"].unique()
 
-snakemake_batches = samples["snakemake_batch"].unique()
+snakemake_batches = samples["snakemake_batch"].unique().tolist()
 snakemake_batch_sources = [f"{members[0]}_{members[1]}" for members in snakemake_batches.split("_")]
 
 

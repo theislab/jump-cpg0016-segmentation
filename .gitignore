@@ -162,3 +162,7 @@ cython_debug/
 # other
 .editorconfig
 snakemake/results
+.snakemake
+.idea
+/snakemake/config/selected_metadata.parquet
+/test.dot
