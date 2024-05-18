@@ -97,8 +97,8 @@ def main(snakemake):
         module_logger.debug(f"Snakemake magic | {key}: {value}")
 
     _aggregate(
-        extraction_path==snakemake.input.extraction_path,
-        segmentation_path==snakemake.input.segmentation_path,
+        extraction_path=snakemake.input.extraction_path,
+        segmentation_path=snakemake.input.segmentation_path,
         source=snakemake.wildcards.source,
         output=snakemake.input.broad_dir,
     )
