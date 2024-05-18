@@ -17,7 +17,9 @@ import pandas as pd
 
 samples = pd.read_parquet(config["samples_meta"])
 sources = samples["Metadata_Source"].unique()
-batches = samples["snakemake_batch"].unique()
+
+snakemake_batches = samples["snakemake_batch"].unique()
+snakemake_batch_sources = [f"{members[0]}_{members[1]}" for members in snakemake_batches.split("_")]
 
 
 def get_agp_url(wildcards): return get_sample_property(wildcards,"s3_OrigAGP")

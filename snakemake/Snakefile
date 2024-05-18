@@ -14,7 +14,7 @@ rule aggregate:
     input:
         # expand("results/aggregated/{source}/{source}.h5", source=sources),
         # expand("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation", source=sources)
-        expand("results/checkpoints/aggregate_broad_batch/{source}/{batch}.ckpt", source=sources, batch=batches)
+        expand("results/checkpoints/aggregate_broad_batch/{source}/{batch}.ckpt", source=snakemake_batch_sources, batch=snakemake_batches)
     output:
         "results/aggregated/aggregate.txt"
     shell:
