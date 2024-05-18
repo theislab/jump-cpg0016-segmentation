@@ -16,7 +16,7 @@ class StatusError(Exception):
 
 
 def _aggregate(
-    extraction_path: str, segmentation_path: str, source: str, output: str, debug: bool = False
+        extraction_path: str, segmentation_path: str, source: str, output: str, debug: bool = False
 ) -> None:
     module_logger.info(f"Aggregating plates for {source}")
     channel_mapping = {
@@ -41,7 +41,7 @@ def _aggregate(
     # output_base.mkdir(parents=True, exist_ok=True)
 
     # for extraction_path, segmentation_path in zip(extraction_paths, segmentation_paths):
-    module_logger.info(f"Processing snakemake batch {extraction_path.parent.name}")
+    # module_logger.info(f"Processing snakemake batch {extraction_path.parent.name}")
     with (
         h5py.File(segmentation_path, "r") as segmentation_file,
         h5py.File(extraction_path, mode="r") as extraction_file,
@@ -54,7 +54,8 @@ def _aggregate(
 
             output_path = output_base.joinpath(batch, plate, f"{plate}.zarr")
             if not output_path.parent.exists():
-                msg = f"Output directory for zarr files in batch {batch}, plate {plate}: ({output_path.parent}) does not exist, aborting"
+                msg = (f"Output directory for zarr files does not exist, aborting. "
+                       f"Batch {batch}, plate {plate}: ({output_path.parent})")
                 module_logger.error(msg)
                 raise FileNotFoundError(msg)
 
