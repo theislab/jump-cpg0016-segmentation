@@ -10,15 +10,38 @@
 #     script:
 #         "../scripts/aggregate_sources.py"
 
-
-rule aggregate_broad:
+rule create_broad_structure:
     input:
         extraction_batches=get_extracted_batches,
         segmentation_batches=get_segmentation_batches
     output:
-        out_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation")
-
-    log: "log/aggregate/broad/aggregate_broad_{source}.log"
+        broad_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation"),
+        checkpoint="results/checkpoints/create_broad_structure/{source}.ckpt"
+    log: "log/aggregate/broad/create_broad_structure_{source}.log"
     conda: "../envs/aggregate_broad.yml"
-    script:
-        "../scripts/aggregate_broad.py"
+    script: "../scripts/create_broad_structure.py"
+    
+
+rule aggregate_broad_batch:
+    input:
+        checkpoint="results/checkpoints/create_broad_structure/{source}.ckpt",
+        extraction_path="results/extraction/{source}/{batch}/extracted_single_cells.h5",
+        segmentation_path="results/segmentation/{source}/{batch}/input_segmentation.h5",
+        broad_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation")
+    output:
+        checkpoint="results/checkpoints/aggregate_broad_batch/{source}/{batch}.ckpt"
+    log: "log/aggregate/broad/aggregate_broad_{batch}_{source}.log"
+    conda: "../envs/aggregate_broad.yml"
+    script: "../scripts/aggregate_broad_batch.py"
+
+# rule aggregate_broad:
+#     input:
+#         extraction_batches=get_extracted_batches,
+#         segmentation_batches=get_segmentation_batches
+#     output:
+#         out_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation")
+
+#     log: "log/aggregate/broad/aggregate_broad_{source}.log"
+#     conda: "../envs/aggregate_broad.yml"
+#     script:
+#         "../scripts/aggregate_broad.py"

@@ -15,20 +15,10 @@ class StatusError(Exception):
     pass
 
 
-def _aggregate(
+def _create_broad_structure(
     extraction_batches: list[str], segmentation_batches: list[str], source: str, output: str, debug: bool = False
 ) -> None:
-    module_logger.info(f"Aggregating plates for {source}")
-    channel_mapping = {
-        0: "NucleusMask",
-        1: "CellMask",
-        2: "DNA",
-        3: "AGP",
-        4: "ER",
-        5: "Mito",
-        6: "RNA",
-    }
-    module_logger.info(f"Channel mapping: {channel_mapping}")
+    module_logger.info(f"Creating broad directory structure for {source}")
 
     extraction_paths = [pl.Path(extraction_batch) for extraction_batch in extraction_batches]
     segmentation_paths = [pl.Path(segmentation_batch) for segmentation_batch in segmentation_batches]
@@ -51,20 +41,20 @@ def _aggregate(
                 output_path = output_base.joinpath(batch, plate, f"{plate}.zarr")
                 output_path.parent.mkdir(parents=True, exist_ok=True)
 
-                with output_path.parent.joinpath("channel_mapping.json").open("w") as mapping_file:
-                    json.dump(obj=channel_mapping, fp=mapping_file)
+                # with output_path.parent.joinpath("channel_mapping.json").open("w") as mapping_file:
+                #     json.dump(obj=channel_mapping, fp=mapping_file)
 
-                cell_indices = np.where(extraction_file["single_cell_index_labelled"][:, 2] == image_id.encode())[
-                    0
-                ].tolist()
+                # cell_indices = np.where(extraction_file["single_cell_index_labelled"][:, 2] == image_id.encode())[
+                #     0
+                # ].tolist()
 
-                with zarr.open(str(output_path.resolve()), mode="a") as out_zarr:
-                    image_group = out_zarr.create_group(image_id, overwrite=debug)
-                    image_group.array(name="label_image", data=segmentation_file["segmentation"][image_idx])
-                    image_group.array(name="single_cell_index", data=extraction_file["single_cell_index"][cell_indices])
-                    image_group.array(name="single_cell_data", data=extraction_file["single_cell_data"][cell_indices])
+                # with zarr.open(str(output_path.resolve()), mode="a") as out_zarr:
+                #     image_group = out_zarr.create_group(image_id, overwrite=debug)
+                #     image_group.array(name="label_image", data=segmentation_file["segmentation"][image_idx])
+                #     image_group.array(name="single_cell_index", data=extraction_file["single_cell_index"][cell_indices])
+                #     image_group.array(name="single_cell_data", data=extraction_file["single_cell_data"][cell_indices])
 
-                    module_logger.info(f"{image_id} wrote to {output_path.name}")
+                #     module_logger.info(f"{image_id} wrote to {output_path.name}")
 
 
 def main(snakemake):
@@ -89,13 +79,18 @@ def main(snakemake):
     for key, value in snakemake.__dict__.items():
         module_logger.debug(f"Snakemake magic | {key}: {value}")
 
-    _aggregate(
+    _create_broad_structure(
         extraction_batches=snakemake.input.extraction_batches,
         segmentation_batches=snakemake.input.segmentation_batches,
         source=snakemake.wildcards.source,
-        output=snakemake.output.out_dir,
+        output=snakemake.output.broad_dir,
     )
 
+    module_logger.info(f"Broad directory structure created for {snakemake.wildcards.source}")
+    module_logger.info("Writing checkpoint file")
+
+    with open(snakemake.output.checkpoint, "w") as checkpoint_file:
+        checkpoint_file.write("Broad directory structure created for {snakemake.wildcards.source}")
 
 if __name__ == "__main__":
     if "snakemake" in locals():
