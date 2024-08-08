@@ -15,18 +15,21 @@ from pathlib import Path
 from lamin_utils import logger
 import sys
 
+
 class PathValidationError(Exception):
     pass
+
 
 def validate_paths(input_path: Path, verbosity: int, dry_run: bool):
     if not input_path:
         raise PathValidationError("Input path not provided.")
-    
+
     if not input_path.exists():
         raise PathValidationError(f"The input path '{input_path}' does not exist.")
-    
+
     if verbosity > 0:
         logger.info(f"Valid input path: {input_path}")
+
 
 def summarise_jobs(input_path: Path, verbosity: int, dry_run: bool):
     job_files = list(input_path.glob("*.txt"))
@@ -36,7 +39,8 @@ def summarise_jobs(input_path: Path, verbosity: int, dry_run: bool):
 
     total_jobs = len(job_files)
     todo_jobs = 0
-    done_jobs = 0
+    ongoing_jobs = 0
+    success_jobs = 0
     error_jobs = 0
 
     for job_file in job_files:
@@ -44,18 +48,20 @@ def summarise_jobs(input_path: Path, verbosity: int, dry_run: bool):
             status = f.readline().strip()
             if status == "todo":
                 todo_jobs += 1
-            elif status == "done":
-                done_jobs += 1
+            elif status == "ongoing":
+                ongoing_jobs += 1
+            elif status == "success":
+                success_jobs += 1
             elif status == "error":
                 error_jobs += 1
 
     if verbosity > 0:
         logger.info(f"Total jobs: {total_jobs}")
         logger.info(f"Todo jobs: {todo_jobs}")
-        logger.info(f"Done jobs: {done_jobs}")
-        logger.info(f"Error jobs: {error_jobs}")
+        logger.info(f"Ongoing jobs: {ongoing_jobs}")
+        logger.success(f"Success jobs: {success_jobs}")
+        logger.error(f"Error jobs: {error_jobs}")
 
-    return total_jobs, todo_jobs, done_jobs, error_jobs
 
 def main():
     arguments = docopt(__doc__, version="v0.1.0")
@@ -79,14 +85,8 @@ def main():
         logger.info(f"Dry run: {'enabled' if dry_run else 'disabled'}")
         logger.info(f"Verbosity level: {verbosity}")
 
-    total_jobs, todo_jobs, done_jobs, error_jobs = summarise_jobs(input_path, verbosity, dry_run)
+    summarise_jobs(input_path, verbosity, dry_run)
 
-    if verbosity > 0:
-        logger.success("Processing complete.")
-        logger.info(f"Total jobs: {total_jobs}")
-        logger.info(f"Todo jobs: {todo_jobs}")
-        logger.info(f"Done jobs: {done_jobs}")
-        logger.info(f"Error jobs: {error_jobs}")
 
 if __name__ == "__main__":
     main()

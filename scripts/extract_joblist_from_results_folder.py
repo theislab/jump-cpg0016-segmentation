@@ -16,20 +16,22 @@ from pathlib import Path
 from lamin_utils import logger
 import sys
 
+
 class PathValidationError(Exception):
     pass
+
 
 def validate_paths(input_path: Path, output_path: Path, verbosity: int, dry_run: bool):
     if not input_path:
         raise PathValidationError("Input path not provided.")
     if not output_path:
         raise PathValidationError("Output path not provided.")
-    
+
     if not input_path.exists():
         raise PathValidationError(f"The input path '{input_path}' does not exist.")
     if verbosity > 0:
         logger.info(f"Valid input path: {input_path}")
-    
+
     if not output_path.exists():
         logger.warning(f"The output path '{output_path}' does not exist.")
 
@@ -68,7 +70,9 @@ def main():
         logger.info(f"Verbosity level: {verbosity}")
 
     # figure out how many sources exist in that results folder
-    path_results_to_sources = input_path / Path("aggregated/broad/cellpainting-gallery/cpg0016-jump/")
+    path_results_to_sources = input_path / Path(
+        "aggregated/broad/cellpainting-gallery/cpg0016-jump/"
+    )
     if not path_results_to_sources.exists():
         logger.error(f"Path '{path_results_to_sources}' does not exist.")
         sys.exit(1)
@@ -104,11 +108,11 @@ def main():
         elif verbosity == 2:
             msg += ":"
             for batch in batches:
-                msg += f"\n  - {batch.name}" 
+                msg += f"\n  - {batch.name}"
         elif verbosity == 3:
             msg += ":"
             for batch in batches:
-                msg += f"\n  - {batch.name} ({batch})" 
+                msg += f"\n  - {batch.name} ({batch})"
 
         if verbosity > 0:
             logger.info(msg)
@@ -150,9 +154,13 @@ def main():
                 if not (plate / Path(f"{plate.name}.zarr")).exists():
                     plates.remove(plate)
                     if verbosity > 0:
-                        logger.warning(f"Plate '{plate.name}' does not contain a .zarr file and will be skipped.")
+                        logger.warning(
+                            f"Plate '{plate.name}' does not contain a .zarr file and will be skipped."
+                        )
 
-            path_dict[source_name][batch_name] = {f"{plate.name}": plate for plate in plates}
+            path_dict[source_name][batch_name] = {
+                f"{plate.name}": plate for plate in plates
+            }
 
     if verbosity > 0:
         logger.info("Creating joblist in output directory.")
@@ -161,16 +169,24 @@ def main():
             for batch_name, batch_dict in source_dict.items():
                 for plate_name, plate_path in batch_dict.items():
                     if not dry_run:
-                        with open(output_path / Path(f"{source_name}__{batch_name}__{plate_name}.txt"), "w") as f:
+                        with open(
+                            output_path
+                            / Path(f"{source_name}__{batch_name}__{plate_name}.txt"),
+                            "w",
+                        ) as f:
                             # double-underscores in filename because placeholders contain single underscores
                             f.write("todo\n")
                             f.write(f"{plate_path}\n")
+                            f.write("---\n")
                     jobs_created += 1
                     if verbosity == 3:
-                        logger.info(f"Created job for plate '{plate_name}' in batch '{batch_name}' for source '{source_name}'.")
+                        logger.info(
+                            f"Created job for plate '{plate_name}' in batch '{batch_name}' for source '{source_name}'."
+                        )
         logger.info(f"Created {jobs_created} job(s).")
 
         logger.success("Processing complete.")
-    
+
+
 if __name__ == "__main__":
     main()
