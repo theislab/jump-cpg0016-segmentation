@@ -92,7 +92,7 @@ def main():
     path_dict = {f"{source.name}": source for source in sources}
 
     # for each source, figure out how many batches exist
-    path_sources_to_batches = Path("workspace/segmentation/cellpose/objects")
+    path_sources_to_batches = Path("workspace/segmentation/cellpose_202404/objects")
     for source_name, source_path in path_dict.items():
         path_source_to_batches = source_path / path_sources_to_batches
         if not path_source_to_batches.exists():

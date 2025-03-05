@@ -23,14 +23,34 @@ import time
 from datetime import datetime
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
+import re
 
-S3_TARGET_DIR = "tim_test/"
+S3_TARGET_DIR = "TIM2"
 
 
 class PathValidationError(Exception):
     pass
 
+def generate_target_prefix(local_path: str):
+    """
+    Generate the target prefix for S3.
+
+    Args:
+    local_path (str): The local path of the file to be uploaded.
+
+    Returns:
+    str: The target prefix for the file on S3.
+    """
+
+    # 1) extract the path in a source-num robust way
+    # Regex explanation:
+    #  - cpg\d+-jump  matches 'cpg' followed by one or more digits, then '-jump'
+    #  - /source_\d+  matches '/source_' followed by one or more digits
+    #  - (.*)$        captures the rest of the path until the end
+    pattern = re.compile(r'(cpg0016-jump\/source_\d+.*)$')
+
+    match = pattern.search(local_path)
+    return f"{S3_TARGET_DIR}/{match[1]}" if match else None
 
 def validate_paths(input_path: Path, verbosity: int):
     if not input_path:
@@ -149,6 +169,8 @@ def get_temporary_credentials(custom_env):
         "READWRITE",
         "--privilege",
         "Default",
+        "--duration-seconds",
+        "14400",  # Setting to 4 h
         "--region",
         custom_env["AWS_REGION"],
     ]
@@ -175,27 +197,16 @@ def initialize_s3_client(credentials, region):
     )
 
 
-def upload_file(s3_client, bucket_name, local_path, s3_path):
+def upload_file(s3_client, bucket_name, local_path, s3_path, job_file):
     """Upload a single file to an S3 bucket with error handling."""
     try:
         s3_client.upload_file(local_path, bucket_name, s3_path)
     except Exception as e:
         msg = f"Failed to upload {local_path} to {s3_path}: {e}"
-        logging.error(msg)
+        logger.error(msg)
         log_into_job_file(job_file, msg)
         return False
     return True
-
-
-def upload_files(s3_client, bucket_name, local_directory, s3_directory):
-    """Upload files to an S3 bucket using ThreadPoolExecutor for parallel processing."""
-    files_to_upload = []
-    for root, dirs, files in os.walk(local_directory):
-        for file in files:
-            local_path = os.path.join(root, file)
-            relative_path = os.path.relpath(local_path, local_directory)
-            s3_path = os.path.join(s3_directory, relative_path)
-            files_to_upload.append((local_path, s3_path))
 
 
 def upload_files(s3_client, bucket_name, local_directory, s3_directory, job_file):
@@ -204,35 +215,47 @@ def upload_files(s3_client, bucket_name, local_directory, s3_directory, job_file
     for root, dirs, files in os.walk(local_directory):
         for file in files:
             local_path = os.path.join(root, file)
-            relative_path = os.path.relpath(local_path, local_directory)
-            s3_path = os.path.join(s3_directory, relative_path)
+            s3_path = generate_target_prefix(local_path)
             files_to_upload.append((local_path, s3_path))
 
     try:
         with ThreadPoolExecutor() as executor:
             futures = [
                 executor.submit(
-                    upload_file, s3_client, bucket_name, local_path, s3_path
+                    upload_file, s3_client, bucket_name, local_path, s3_path, job_file
                 )
                 for local_path, s3_path in files_to_upload
             ]
             with tqdm(total=len(futures), desc="Uploading Files") as tqdm_instance:
-                completed = 0
-                for future in as_completed(futures):
-                    if future.result():
-                        tqdm_instance.update(1)
-                        completed += 1
-                        if completed % 100 == 0:
-                            progress_message = (
-                                f"{completed}/{len(futures)} files uploaded."
-                            )
-                            log_into_job_file(job_file, progress_message)
-                # Final log after last file
-                progress_message = f"{completed}/{len(futures)} files uploaded."
-                log_into_job_file(job_file, progress_message)
+                _upload_in_parallel(futures, tqdm_instance, job_file)
     except KeyboardInterrupt:
         error_message = "Transfer interrupted by user."
-        append_log_to_job_file(job_file, error_message)
+        log_into_job_file(job_file, error_message)
+        raise
+
+def _upload_in_parallel(futures, tqdm_instance, job_file):
+    try:
+        completed = 0
+        for future in as_completed(futures):
+            if future.result():
+                tqdm_instance.update(1)
+                completed += 1
+                if completed % 10000 == 0:
+                    progress_message = (
+                        f"{completed}/{len(futures)} files uploaded."
+                    )
+                    log_into_job_file(job_file, progress_message)
+        # Final log after last file
+        progress_message = f"{completed}/{len(futures)} files uploaded."
+        log_into_job_file(job_file, progress_message)
+        msg = f"Successfully uploaded {completed} files."
+        logger.success(msg)
+        log_into_job_file(job_file, msg)
+        update_job_status(job_file, "done")
+    except Exception as e:
+        msg = f"An error occurred: {e}"
+        logger.error(msg)
+        log_into_job_file(job_file, msg)
         raise
 
 
@@ -307,9 +330,9 @@ def main():
                 update_job_status(plate_to_transfer, "error")
 
         except KeyboardInterrupt:
-            msg = "Keyboard interrupt received. Exiting."
+            msg = "Keyboard interrupt received. Exiting." 
             logger.error(msg)
-            log_into_job_file(job_file, msg)
+            log_into_job_file(plate_to_transfer, msg)
             if plate_to_transfer:
                 update_job_status(plate_to_transfer, "error")
             sys.exit(1)
@@ -317,10 +340,10 @@ def main():
         except Exception as e:
             msg = f"An error occurred: {e}"
             logger.error(msg)
-            log_into_job_file(job_file, msg)
+            log_into_job_file(plate_to_transfer, msg)
             if plate_to_transfer:
                 update_job_status(plate_to_transfer, "error")
-            time.sleep(10)  # Wait a minute before retrying
+            time.sleep(3)  # wait before retrying
 
 
 if __name__ == "__main__":
