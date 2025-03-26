@@ -71,7 +71,7 @@ def main():
 
     # figure out how many sources exist in that results folder
     path_results_to_sources = input_path / Path(
-        "aggregated/broad/cellpainting-gallery/cpg0016-jump/"
+        "aggregated/broad_compressed/cellpainting-gallery/cpg0016-jump/"
     )
     if not path_results_to_sources.exists():
         logger.error(f"Path '{path_results_to_sources}' does not exist.")

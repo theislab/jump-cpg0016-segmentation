@@ -25,7 +25,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 
-S3_TARGET_DIR = "TIM2"
+S3_TARGET_DIR = "TIM_compressed"
 
 
 class PathValidationError(Exception):

@@ -4,7 +4,7 @@
 During the segmentation, we structured the work by sources. So we now have `n_sources` folders with results on our file system. We will iterate over them. First, we generate a list of "jobs" from a given results folder. Here, a "job" is equal to one fully segmented plate, now stored as a .zarr file. We created a script to automate this generation:
 
 ```bash
-python extract_joblist_from_results_folder.py \
+python 01_extract_joblist_from_results_folder.py \
     --input_path /lustre/groups/ml01/projects/2023_ttreis_segment_JUMP/snakemake/final_source08/snakemake/results \
     --output_path ./source08 \
     --verbosity 1
@@ -40,7 +40,7 @@ The transfer script also logs its progress in the respective file.
 IMPORTANT: We assume that each individual transfer takes less than 12 h, after that the credential for the current transfer would expire. We query a new one after each plate.
 
 ```bash
-python transfer_plates.py \
+python 04_transfer_plates.py \
     --input_path ./source08 \
     --verbosity 1 
 ```
