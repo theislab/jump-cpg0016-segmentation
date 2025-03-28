@@ -62,7 +62,12 @@ def _download_worker(download_queue: mp.JoinableQueue):
         s3_url, path = download_queue.get(block=True)
 
         bucket, key = JumpDl.get_bucket_key(s3_url=s3_url)
-        response = client.get_object(Bucket=bucket, Key=key)
+        try:
+            response = client.get_object(Bucket=bucket, Key=key)
+        except Exception as e:
+            module_logger.error(f"Unable to download {s3_url}: {e}")
+            raise S3ERROR(s3_url) from e
+
 
         if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
             msg = f"Unexpected response from AWS s3: {response['ResponseMetadata']}"
@@ -96,7 +101,7 @@ class JumpConfig:
 
         self.loaddata_formatter = (
             "s3://cellpainting-gallery/cpg0016-jump/"
-            "{Metadata_Source}/workspace/load_data_csv/"
+            "{Metadata_Source}/workspace/load_data_csv_orig/"
             "{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.parquet"
         )
 
@@ -547,7 +552,7 @@ class JumpDl(JumpMeta):
     def _get_parquet_url(source: str, batch: str, plate: str) -> pl.Path:
         url = (
             f"s3://cellpainting-gallery/cpg0016-jump/{source}/"
-            f"workspace/load_data_csv/{batch}/{plate}/"
+            f"workspace/load_data_csv_orig/{batch}/{plate}/"
             f"load_data_with_illum.parquet"
         )
         return pl.Path(url)
