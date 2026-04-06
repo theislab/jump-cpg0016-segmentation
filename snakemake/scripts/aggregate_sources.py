@@ -59,7 +59,7 @@ def _get_sample_index_map(batch_file: h5py.File, source_group: h5py.Group) -> di
     sample_index_map = {}
     for cell_idx in range(n_cells):
         cell_inchi_key = _get_cell_label(batch_file, cell_idx, inchi_key_label_idx)
-        module_logger.debug(f"Cell inchi key: {cell_inchi_key}")
+        # module_logger.debug(f"Cell inchi key: {cell_inchi_key}")  # bottleneck
         sample_id = _get_cell_label(batch_file, cell_idx, id_label_idx)
         try:
             inchi_group = _get_group(cell_inchi_key, source_group)
