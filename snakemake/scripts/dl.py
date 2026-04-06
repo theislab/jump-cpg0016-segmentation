@@ -101,7 +101,7 @@ class JumpConfig:
 
         self.loaddata_formatter = (
             "s3://cellpainting-gallery/cpg0016-jump/"
-            "{Metadata_Source}/workspace/load_data_csv_orig/"
+            "{Metadata_Source}/workspace/load_data_csv/"
             "{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.parquet"
         )
 
@@ -552,7 +552,7 @@ class JumpDl(JumpMeta):
     def _get_parquet_url(source: str, batch: str, plate: str) -> pl.Path:
         url = (
             f"s3://cellpainting-gallery/cpg0016-jump/{source}/"
-            f"workspace/load_data_csv_orig/{batch}/{plate}/"
+            f"workspace/load_data_csv/{batch}/{plate}/"
             f"load_data_with_illum.parquet"
         )
         return pl.Path(url)
