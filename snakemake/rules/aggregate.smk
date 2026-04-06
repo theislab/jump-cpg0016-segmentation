@@ -45,3 +45,16 @@ rule aggregate_broad_batch:
 #     conda: "../envs/aggregate_broad.yml"
 #     script:
 #         "../scripts/aggregate_broad.py"
+
+
+rule rechunk_broad:
+    input:
+        batch_checkpoints=get_aggregate_broad_batch_checkpoints,
+        broad_dir=directory("results/aggregated/broad/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation")
+    output:
+        compressed_dir=directory("results/aggregated/broad_compressed/cellpainting-gallery/cpg0016-jump/{source}/workspace/segmentation"),
+        checkpoint="results/checkpoints/rechunk_broad/{source}.ckpt"
+    threads: 32
+    log: "log/rechunk/rechunk_{source}.log"
+    conda: "../envs/rechunk.yml"
+    script: "../scripts/rechunk_broad.py"

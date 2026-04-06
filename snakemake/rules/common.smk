@@ -55,6 +55,10 @@ def get_segmentation_batches(wildcards) -> typing.List[str]:
              for batch in get_source_samples(wildcards)]
     return paths
 
+def get_aggregate_broad_batch_checkpoints(wildcards) -> typing.List[str]:
+    return [f"results/checkpoints/aggregate_broad_batch/{wildcards.source}/{batch}.ckpt"
+            for batch in get_source_samples(wildcards)]
+
 def get_sample_property(wildcards, property):
     as_series = samples.loc[samples.id == wildcards.sample][property]
     if len(as_series) == 1:

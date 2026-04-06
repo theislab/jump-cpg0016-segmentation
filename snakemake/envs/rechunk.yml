@@ -1,0 +1,7 @@
+name: rechunk
+channels:
+  - conda-forge
+dependencies:
+  - zarr>=3
+  - dask
+  - numcodecs
