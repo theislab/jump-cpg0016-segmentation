@@ -8,7 +8,8 @@
 - [x] Created `pixi.toml` for source_04 (mirroring source_03 setup)
 - [x] Updated `profile/config.yaml` for current SLURM allocation: 15 cores, 80GB VRAM, 300GB RAM
 - [x] Pipeline running: 1652 total steps (464 downloads + 476 extracts + 708 aggregate_broad_batch + create_broad_structure + rechunk_broad + aggregate)
-- [ ] Monitor pipeline to completion — as of handoff, **290/1652 jobs done (18%)**, 0 errors, GPU 100%
+- [ ] Monitor pipeline to completion — **883/1652 jobs done (53%)** as of node death (2026-04-08 ~02:00), 0 errors
+- [ ] Resume pipeline on new SLURM node — see `HANDOVER.md` for exact steps (`pixi run unlock` then `pixi run run`)
 - [ ] After pipeline completes: verify all 708 extraction/segmentation dirs exist
 - [ ] After pipeline completes: verify aggregated Zarr output and rechunked compressed output
 - [ ] Clean up leftover temp mmap dirs in `results/tmp/`
