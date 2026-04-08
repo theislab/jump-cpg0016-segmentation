@@ -3,12 +3,10 @@ import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
-import dask
-import dask.array as da
+import numpy as np
 import zarr
 from numcodecs import blosc
-from zarr.codecs import BloscCodec, BytesCodec, ShardingCodec
-from zarr.storage import LocalStore
+from zarr.codecs import BloscCodec
 
 module_logger = logging.getLogger(__name__)
 
@@ -16,7 +14,6 @@ SUBGROUPS = ["label_image", "single_cell_data", "single_cell_index"]
 CELL_CHUNK_SIZE = 1
 CELLS_PER_SHARD = 4096
 COMPRESSOR = BloscCodec(cname="zstd", clevel=3, shuffle="shuffle")
-CODECS_PIPELINE = (BytesCodec(), COMPRESSOR)
 BLOSC_THREADS = 1  # per-worker; each subprocess sets this independently
 
 
@@ -31,42 +28,42 @@ def _target_chunks_and_shard_shape(shape):
 def process_group(store_path, new_store_path, group_name):
     """Rechunk a single image group into per-cell sharded Zarr v3. Called in a subprocess."""
     blosc.set_nthreads(BLOSC_THREADS)
-    dask.config.set(scheduler="threads", num_workers=1)
 
     src = zarr.open(store_path, mode="r")
     if group_name not in src:
         return
 
     src_group = src[group_name]
-    target_store = LocalStore(str(new_store_path))
+    dst = zarr.open(new_store_path, mode="a")
 
     for sub in SUBGROUPS:
         if sub not in src_group:
             continue
         src_ds = src_group[sub]
-        darray = da.from_zarr(src_ds)
-        target_chunks, shard_chunk = _target_chunks_and_shard_shape(darray.shape)
-        if shard_chunk is None:
+        data = np.asarray(src_ds)
+        shard_shape, chunk_shape = _target_chunks_and_shard_shape(data.shape)
+        if chunk_shape is None:
             module_logger.warning(f"Skipping {group_name}/{sub}: scalar array.")
             continue
-        sharding_codec = ShardingCodec(chunk_shape=shard_chunk, codecs=CODECS_PIPELINE)
-        darray_rechunked = darray.rechunk(target_chunks)
-        darray_rechunked.to_zarr(
-            target_store,
-            component=f"{group_name}/{sub}",
+        dst.create_array(
+            name=f"{group_name}/{sub}",
+            data=data,
+            chunks=chunk_shape,
+            shards=shard_shape,
+            compressors=COMPRESSOR,
             overwrite=True,
-            compute=True,
-            zarr_version=3,
-            codecs=[sharding_codec.to_dict()],
         )
 
 
 def rechunk_plate(store_path: Path, n_workers: int):
     new_store_path = Path(str(store_path).replace("/broad/", "/broad_compressed/"))
-    os.makedirs(new_store_path, exist_ok=True)
+    os.makedirs(new_store_path.parent, exist_ok=True)
 
     src = zarr.open(str(store_path), mode="r")
     groups = list(src.group_keys())
+
+    # Initialize the zarr store once before spawning workers
+    zarr.open(str(new_store_path), mode="w")
 
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
         futures = [
@@ -74,7 +71,7 @@ def rechunk_plate(store_path: Path, n_workers: int):
             for group_name in groups
         ]
         for future in as_completed(futures):
-            future.result()
+            future.result()  # raises if the subprocess failed
 
 
 def main(snakemake):

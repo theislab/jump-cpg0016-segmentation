@@ -6,9 +6,9 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-run = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs", env = { PATH = "/home/icb/tim.treis/miniforge3/bin:$PATH" } }
-dryrun = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs -n", env = { PATH = "/home/icb/tim.treis/miniforge3/bin:$PATH" } }
-unlock = { cmd = "snakemake --unlock --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs", env = { PATH = "/home/icb/tim.treis/miniforge3/bin:$PATH" } }
+run = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
+dryrun = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs -n", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
+unlock = { cmd = "snakemake --unlock --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
 
 [dependencies]
 snakemake = ">=8,<9"
