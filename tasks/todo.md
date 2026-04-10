@@ -15,27 +15,38 @@
 - [x] Fixed zarr v3 incompatibility in `rechunk_broad.py`: replaced dask `to_zarr()` with native zarr v3 `create_array()` using `shards`/`chunks`/`compressors`; initialized store before workers (PR #11)
 - [x] Added pixi.toml for snakemake 8 (PR #11)
 
+## All-Source Migration (2026-04-10)
+
+- [x] All 11 source deployments migrated to current main (d74cf93) with zarr v3 fixes, pixi.toml, updated scripts
+- [x] All `aggregate_broad.yml` updated: `ome-zarr` (zarr v2) → `zarr>=3`
+- [x] All profiles standardized: 15 cores, vram_mb=80000, mem_mb=300000
+- [x] All diameters standardized: nucleus=23, cytosol=57 (source04 was 25/69, changed for consistency)
+- [x] Source02 samples.json: removed subset filters (Metadata_PlateType, Metadata_InChIKey) — now processes full source_2
+- [x] New zarr v3 conda env created (hash d07e64204b55eb5dcc9dfdcb6fbe5b55)
+
 ## Per-Source Pipeline Status
 
-- [x] sources 02, 08, 10: Fully complete (final aggregate exists).
-- [x] **source04**: Completed 2026-04-08. All 708 batches extracted, 277 plates rechunked, aggregate checkpoint written.
-- [ ] **source03**: 98.6% done (4128/4186 batches extracted). Not currently running — needs restart for last 58 batches, then aggregation.
-- [ ] **source06**: 100% extraction done (3207/3206), 2 broad batches aggregated — needs aggregation pipeline run.
-- [ ] **source13**: 100% extraction done (286/286 batches) — needs aggregation pipeline run.
-- [ ] **source05**: 80.5% done (2896/3595 batches). Not running.
-- [ ] **source09**: 64.7% done (1717/2652 batches). Not running.
-- [ ] **source11**: 73.7% done (1779/2415 batches). Not running.
-- [ ] **source07**: 53.9% done (953/1769 batches). Not running.
+- [ ] **source02**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
+- [ ] **source03**: 98.6% extracted (4128/4186). Migrated, not running — needs restart for last 58 batches, then aggregation.
+- [ ] **source04**: Migrated. **Needs full rerun** — diameters changed from 25/69 to 23/57, all prior extraction/segmentation is invalid.
+- [ ] **source05**: 80.5% extracted (2896/3595). Migrated, not running.
+- [ ] **source06**: 100% extracted (3207). Aggregation pipeline running as of 2026-04-10 ~22:00. Currently in create_broad_structure phase.
+- [ ] **source07**: 53.9% extracted (953/1769). Migrated, not running.
+- [ ] **source08**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
+- [ ] **source09**: 64.7% extracted (1717/2652). Migrated, not running.
+- [ ] **source10**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
+- [ ] **source11**: 73.7% extracted (1779/2415). Migrated, not running.
+- [ ] **source13**: 100% extracted (286), 93 segmentations. Migrated, not running — needs pipeline run.
 - [ ] Kick off remaining sources on separate nodes
 
-## Source 04 Completed Items
+## Source 04 Completed Items (prior run — now invalidated by diameter change)
 
 - [x] Diagnosed why source_4 only had 244/708 batches: May 2025 re-run was killed mid-execution
 - [x] Installed snakemake 8 via pixi, created pixi.toml, updated profile (15 cores, 80GB VRAM, 300GB RAM)
 - [x] Pipeline completed successfully (2026-04-08 19:22) — all 277 plates rechunked
-- [ ] Verify rechunked compressed output integrity (spot-check a few plates)
+- [x] ~~Verify rechunked compressed output integrity~~ — moot, full rerun needed (diameters changed 25/69 → 23/57)
+- [ ] Clean up old source04 results before rerun (extraction, segmentation, aggregated dirs contain data from old diameters)
 - [ ] Clean up leftover temp mmap dirs in source04 `results/tmp/` (40 dirs from May 2025)
-- [ ] Clean up duplicate log files from failed launch attempts
 
 ## Performance
 
@@ -46,14 +57,16 @@
 
 ## Downstream
 
-- [ ] Replicate zarr v3 fixes to other source pipelines if they use older scripts
-- [ ] Verify rechunk_broad Zarr v3 output is correct before running on all sources
+- [x] ~~Replicate zarr v3 fixes to other source pipelines~~ — all 11 sources migrated to current main (2026-04-10)
+- [ ] Verify rechunk_broad Zarr v3 output is correct (check source06 output once aggregation finishes)
 - [ ] Final aggregate step for all sources still pending
+- [ ] Rerun aggregation for sources 02, 08, 10 with zarr v3 for output consistency
 
-## Config Notes (source_4-specific, NOT committed to main)
-- `samples.json`: `{"samples": [{"Metadata_Source": "source_4"}]}` (708 batches)
-- `sparcspy.yml`: nucleus diameter=25, cytosol diameter=69 (differs from repo default of 21/53)
-- `profile/config.yaml`: 15 cores, vram_mb=80000, mem_mb=300000
+## Config Notes (all sources, NOT committed — local overrides in each deployment)
+- `samples.json`: `{"samples": [{"Metadata_Source": "source_N"}]}` per source
+- `sparcspy.yml`: nucleus diameter=23, cytosol diameter=57 (all sources standardized)
+- `profile/config.yaml`: 15 cores, vram_mb=80000, mem_mb=300000 (all sources standardized)
+- `aggregate_broad.yml`: zarr>=3 (all sources, replaces ome-zarr/zarr v2)
 
 ## Known Issues
 - Extract rule outputs are marked `temp()` — extraction/segmentation H5 files get deleted after downstream rules consume them
