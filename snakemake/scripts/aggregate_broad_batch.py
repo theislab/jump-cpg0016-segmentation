@@ -66,13 +66,13 @@ def _aggregate(
                 0
             ].tolist()
 
-            with zarr.open(str(output_path.resolve()), mode="a") as out_zarr:
-                image_group = out_zarr.create_group(image_id, overwrite=debug)
-                image_group.array(name="label_image", data=segmentation_file["segmentation"][image_idx])
-                image_group.array(name="single_cell_index", data=extraction_file["single_cell_index"][cell_indices])
-                image_group.array(name="single_cell_data", data=extraction_file["single_cell_data"][cell_indices])
+            out_zarr = zarr.open(str(output_path.resolve()), mode="a")
+            image_group = out_zarr.create_group(image_id, overwrite=debug)
+            image_group.create_array(name="label_image", data=segmentation_file["segmentation"][image_idx])
+            image_group.create_array(name="single_cell_index", data=extraction_file["single_cell_index"][cell_indices])
+            image_group.create_array(name="single_cell_data", data=extraction_file["single_cell_data"][cell_indices])
 
-                module_logger.info(f"{image_id} wrote to {output_path.name}")
+            module_logger.info(f"{image_id} wrote to {output_path.name}")
 
 
 def main(snakemake):
