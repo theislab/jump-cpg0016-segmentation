@@ -163,6 +163,20 @@ The key insight: **don't trust log file counts** (NFS lag). Count output files o
 
 ---
 
+## aggregate_broad.yml with ome-zarr installs zarr v2, not v3
+
+The `aggregate_broad.yml` conda env spec originally depended on `ome-zarr`, which pulls in zarr 2.x. The updated `aggregate_broad_batch.py` uses `create_array()` which works in both v2 and v3, but `rechunk_broad.py` uses zarr v3-only features (`zarr.codecs.BloscCodec`, `shards=`, `group_keys()`). For consistency, change the dep to `zarr>=3` and drop `ome-zarr`.
+**Why:** Discovered during source06 migration — the shared conda env (hash 425de6b...) had zarr 2.17.0. New env (hash d07e6420...) created with zarr v3.
+
+---
+
+## Per-source deployments diverge from repo main over time
+
+Each `final_sourceNN/snakemake/` checkout drifts: local commits on main, stashed config changes, old branches. Migration pattern: stash → fetch → reset --hard origin/main → pop stash (resolve conflicts keeping main code + source-specific configs). The only files that should differ per-source are `config/samples.json`, `config/sparcspy.yml`, and `profile/config.yaml`.
+**Why:** Found 6 different git states across 11 sources (two branches, two main versions, various local commits). Standardizing all at once prevents subtle differences in pipeline behavior.
+
+---
+
 ## Download .npy files disappearing doesn't mean download failed
 
 The extract rule consumes the .npy but it's not marked `temp()` — however, if the pipeline is killed mid-run and restarted, snakemake may re-download. Missing .npy files with existing download logs means the pipeline was interrupted, not that downloads failed.

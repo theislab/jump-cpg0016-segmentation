@@ -1,7 +1,7 @@
-name: aggregate_sources
+name: aggregate_broad
 channels:
   - conda-forge
 dependencies:
   - h5py
   - numpy
-  - ome-zarr
+  - zarr>=3
