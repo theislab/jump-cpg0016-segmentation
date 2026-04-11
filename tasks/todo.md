@@ -20,32 +20,35 @@
 - [x] All 11 source deployments migrated to current main (d74cf93) with zarr v3 fixes, pixi.toml, updated scripts
 - [x] All `aggregate_broad.yml` updated: `ome-zarr` (zarr v2) → `zarr>=3`
 - [x] All profiles standardized: 15 cores, vram_mb=80000, mem_mb=300000
-- [x] All diameters standardized: nucleus=23, cytosol=57 (source04 was 25/69, changed for consistency)
+- [x] All diameters standardized: nucleus=23, cytosol=57 (all sources, including source04)
+- [x] All sources pulled to main (2edee45) and pixi installed (2026-04-11)
 - [x] Source02 samples.json: removed subset filters (Metadata_PlateType, Metadata_InChIKey) — now processes full source_2
 - [x] New zarr v3 conda env created (hash d07e64204b55eb5dcc9dfdcb6fbe5b55)
 
 ## Per-Source Pipeline Status
 
-- [ ] **source02**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
-- [ ] **source03**: 98.6% extracted (4128/4186). Migrated, not running — needs restart for last 58 batches, then aggregation.
-- [ ] **source04**: Migrated. **Needs full rerun** — diameters changed from 25/69 to 23/57, all prior extraction/segmentation is invalid.
-- [ ] **source05**: 80.5% extracted (2896/3595). Migrated, not running.
-- [ ] **source06**: 100% extracted (3207). Aggregation pipeline running as of 2026-04-10 ~22:00. Currently in create_broad_structure phase.
-- [ ] **source07**: 53.9% extracted (953/1769). Migrated, not running.
-- [ ] **source08**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
-- [ ] **source09**: 64.7% extracted (1717/2652). Migrated, not running.
-- [ ] **source10**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
-- [ ] **source13**: Pipeline running on gpusrv65 (SLURM job 35111617, nohup PID 2733896). Pulled latest main (b3a845c) before starting. 190/484 steps (39%) as of 2026-04-11 ~01:30. 194 extract jobs total, 15 concurrent. SLURM job has ~5h remaining of 24h limit — will likely need extension or restart. Log at `/tmp/source13_pipeline.log` on gpusrv65.
-- [ ] **source13**: 100% extracted (286), 93 segmentations. Migrated, not running — needs pipeline run.
-- [ ] Kick off remaining sources on separate nodes
+**CRITICAL (discovered 2026-04-11): ALL 2024 extractions used wrong diameters (21/53 instead of 23/57). Every source needs full rerun except source04 and source13.**
 
-## Source 04 Completed Items (prior run — now invalidated by diameter change)
+- [ ] **source02**: Needs full rerun. 1960 batches. Old 2024 extraction invalid (21/53). No extraction dir remains.
+- [ ] **source03**: Full rerun started on separate node (2026-04-11). 4186 batches. Config fixed to 23/57.
+- [x] **source04**: **COMPLETE and ready for Broad transfer.** Extracted Apr 8 2026 with correct 23/57. 708 batches, 277 plates rechunked. aggregate.txt present.
+- [ ] **source05**: Needs full rerun. 3595 batches. Old 2024 extraction invalid (21/53). Old results need cleaning.
+- [ ] **source06**: Needs full rerun. 3206 batches. Old 2024 extraction invalid (21/53). Old aggregation was on invalid data.
+- [ ] **source07**: Full rerun started on hpc-build01 (PID 4049212, 2026-04-11). Old results cleaned. 1769 batches.
+- [ ] **source08**: Needs full rerun. 2986 batches. Old 2024 extraction invalid (21/53). No extraction dir remains.
+- [ ] **source09**: Needs full rerun. 2652 batches. Old 2024 extraction invalid (21/53). Old results need cleaning.
+- [ ] **source10**: Needs full rerun. 2038 batches. Old 2024 extraction invalid (21/53). No extraction dir remains.
+- [ ] **source11**: Needs full rerun. 2415 batches. Old 2024 extraction invalid (21/53). Old results need cleaning.
+- [ ] **source13**: Running on gpusrv65 with correct 23/57. ~286 batches extracted as of 2026-04-11.
+- [ ] Kick off remaining sources (02, 05, 06, 08, 09, 10, 11) on separate nodes — clean old results first
+- [ ] Transfer source04 to Broad (first source ready)
+
+## Source 04 — COMPLETE (Apr 8 2026, correct 23/57 diameters)
 
 - [x] Diagnosed why source_4 only had 244/708 batches: May 2025 re-run was killed mid-execution
 - [x] Installed snakemake 8 via pixi, created pixi.toml, updated profile (15 cores, 80GB VRAM, 300GB RAM)
-- [x] Pipeline completed successfully (2026-04-08 19:22) — all 277 plates rechunked
-- [x] ~~Verify rechunked compressed output integrity~~ — moot, full rerun needed (diameters changed 25/69 → 23/57)
-- [ ] Clean up old source04 results before rerun (extraction, segmentation, aggregated dirs contain data from old diameters)
+- [x] Pipeline completed successfully (2026-04-08 19:22) — all 277 plates rechunked with correct 23/57 diameters
+- [x] Verified: extraction ran Apr 8 2026 (after diameter fix), aggregate.txt present, rechunk checkpoint complete
 - [ ] Clean up leftover temp mmap dirs in source04 `results/tmp/` (40 dirs from May 2025)
 
 ## Performance
@@ -58,9 +61,9 @@
 ## Downstream
 
 - [x] ~~Replicate zarr v3 fixes to other source pipelines~~ — all 11 sources migrated to current main (2026-04-10)
-- [ ] Verify rechunk_broad Zarr v3 output is correct (check source06 output once aggregation finishes)
-- [ ] Final aggregate step for all sources still pending
-- [ ] Rerun aggregation for sources 02, 08, 10 with zarr v3 for output consistency
+- [ ] Verify rechunk_broad Zarr v3 output is correct (check source04 output — first complete source)
+- [ ] Transfer source04 compressed zarr output to Broad
+- [ ] All sources need full pipeline completion (extract → aggregate → rechunk) with correct 23/57 diameters
 
 ## Config Notes (all sources, NOT committed — local overrides in each deployment)
 - `samples.json`: `{"samples": [{"Metadata_Source": "source_N"}]}` per source
