@@ -185,6 +185,22 @@ When `create_broad_structure` creates directories and `aggregate_broad_batch` jo
 
 ---
 
+## Git-committed config ≠ runtime config — verify extraction diameters by file dates, not git history
+
+The sparcspy.yml in each deployment is a local override (not committed). Git history shows 21/53 diameters (852cc90, Mar 2024), but local files were updated to 23/57 in Apr 2026. To determine which diameters a given extraction used, check the **file modification timestamps** on extraction h5 files — not git log. If h5 files predate the local config change, they used old diameters and are invalid.
+
+**Why:** Assumed all 2024 extractions used wrong diameters. This turned out to be correct, but source04 had been silently rerun in Apr 2026 with correct diameters. Checking only git history would have missed this. Always verify by timestamps.
+
+---
+
+## Snakemake replays full DAG even when only final step is missing
+
+If intermediate outputs (extraction h5 files) have been deleted but their downstream checkpoints exist, snakemake still traces the full DAG and wants to rerun everything from scratch. `--force` on the target rule alone doesn't help — snakemake insists on recreating missing intermediates. If intermediates were intentionally deleted, the entire pipeline must rerun.
+
+**Why:** Tried to run only rechunk_broad for source08 (broad aggregation existed, extraction deleted). Snakemake wanted 5988 jobs including all extractions. No shortcut — full rerun needed.
+
+---
+
 ## Download .npy files disappearing doesn't mean download failed
 
 The extract rule consumes the .npy but it's not marked `temp()` — however, if the pipeline is killed mid-run and restarted, snakemake may re-download. Missing .npy files with existing download logs means the pipeline was interrupted, not that downloads failed.
