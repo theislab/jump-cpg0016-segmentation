@@ -177,6 +177,14 @@ Each `final_sourceNN/snakemake/` checkout drifts: local commits on main, stashed
 
 ---
 
+## NFS cache coherency causes FileNotFoundError on newly created dirs
+
+When `create_broad_structure` creates directories and `aggregate_broad_batch` jobs start immediately after (~7 min gap), some jobs get `FileNotFoundError` because NFS metadata cache hasn't propagated yet. Other parallel jobs accessing the same dirs succeed fine — it's a race.
+**Why:** Source06 first aggregation run failed on batch_2389 with empty log (script didn't even start). All directories existed when checked manually afterward. Restart fixed it since dirs were fully materialized by then.
+**Fix:** Just restart the pipeline. Snakemake resumes from completed checkpoints. Could also add a sleep between create_broad_structure and aggregate_broad_batch, but that requires rule changes.
+
+---
+
 ## Download .npy files disappearing doesn't mean download failed
 
 The extract rule consumes the .npy but it's not marked `temp()` — however, if the pipeline is killed mid-run and restarted, snakemake may re-download. Missing .npy files with existing download logs means the pipeline was interrupted, not that downloads failed.
