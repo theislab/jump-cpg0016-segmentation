@@ -36,7 +36,7 @@
 - [ ] **source09**: 64.7% extracted (1717/2652). Migrated, not running.
 - [ ] **source10**: Migrated. Previously complete but needs aggregation rerun with zarr v3 for consistency.
 - [ ] **source11**: 73.7% extracted (1779/2415). Migrated, not running.
-- [ ] **source13**: 100% extracted (286), 93 segmentations. Migrated, not running — needs pipeline run.
+- [ ] **source13**: Pipeline running on gpusrv65 (SLURM job 35111617, nohup PID 2733896). Pulled latest main (b3a845c) before starting. 190/484 steps (39%) as of 2026-04-11 ~01:30. 194 extract jobs total, 15 concurrent. SLURM job has ~5h remaining of 24h limit — will likely need extension or restart. Log at `/tmp/source13_pipeline.log` on gpusrv65.
 - [ ] Kick off remaining sources on separate nodes
 
 ## Source 04 Completed Items (prior run — now invalidated by diameter change)
