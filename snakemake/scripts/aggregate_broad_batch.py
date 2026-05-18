@@ -3,7 +3,6 @@ import logging
 import pathlib as pl
 
 import h5py
-import numpy as np
 import zarr
 
 module_logger = logging.getLogger(__name__)
@@ -16,7 +15,7 @@ class StatusError(Exception):
 
 
 def _aggregate(
-        extraction_path: str, segmentation_path: str, source: str, output: str, debug: bool = False
+        extraction_path: str, segmentation_path: str, source: str, output: str
 ) -> None:
     module_logger.info(f"Aggregating plates for {source}")
     channel_mapping = {
@@ -30,27 +29,28 @@ def _aggregate(
     }
     module_logger.info(f"Channel mapping: {channel_mapping}")
 
-    # extraction_paths = [pl.Path(extraction_batch) for extraction_batch in extraction_batches]
-    # segmentation_paths = [pl.Path(segmentation_batch) for segmentation_batch in segmentation_batches]
-
     output_base = pl.Path(output).joinpath("cellpose/objects")
     if not output_base.exists():
         msg = f"Output base directory ({output_base}) does not exist, aborting"
         module_logger.error(msg)
         raise FileNotFoundError(msg)
-    # output_base.mkdir(parents=True, exist_ok=True)
 
-    # for extraction_path, segmentation_path in zip(extraction_paths, segmentation_paths):
-    # module_logger.info(f"Processing snakemake batch {extraction_path.parent.name}")
     with (
         h5py.File(segmentation_path, "r") as segmentation_file,
         h5py.File(extraction_path, mode="r") as extraction_file,
     ):
+        cell_indices_by_image: dict[bytes, list[int]] = {}
+        for row_idx, img_id in enumerate(extraction_file["single_cell_index_labelled"][:, 2]):
+            cell_indices_by_image.setdefault(img_id, []).append(row_idx)
+
+        zarr_groups: dict[str, zarr.Group] = {}
+        mapping_written: set[pl.Path] = set()
+
         n_images = segmentation_file["labels"].shape[0]
         for image_idx in range(n_images):
             image_id = segmentation_file["labels"][image_idx, 1].decode()
             module_logger.info(f"Processing image {image_id}")
-            source, batch, plate, well, spot = tuple(image_id.split("__"))
+            _, batch, plate, _, _ = image_id.split("__")
 
             output_path = output_base.joinpath(batch, plate, f"{plate}.zarr")
             if not output_path.parent.exists():
@@ -59,15 +59,24 @@ def _aggregate(
                 module_logger.error(msg)
                 raise FileNotFoundError(msg)
 
-            with output_path.parent.joinpath("channel_mapping.json").open("w") as mapping_file:
-                json.dump(obj=channel_mapping, fp=mapping_file)
+            if output_path.parent not in mapping_written:
+                with output_path.parent.joinpath("channel_mapping.json").open("w") as mapping_file:
+                    json.dump(obj=channel_mapping, fp=mapping_file)
+                mapping_written.add(output_path.parent)
 
-            cell_indices = np.where(extraction_file["single_cell_index_labelled"][:, 2] == image_id.encode())[
-                0
-            ].tolist()
+            cell_indices = cell_indices_by_image.get(image_id.encode(), [])
 
-            out_zarr = zarr.open(str(output_path.resolve()), mode="a")
-            image_group = out_zarr.create_group(image_id, overwrite=debug)
+            store_key = str(output_path.resolve())
+            if store_key not in zarr_groups:
+                zarr_groups[store_key] = zarr.open(store_key, mode="a")
+            out_zarr = zarr_groups[store_key]
+
+            # overwrite=True makes resume after a TIMEOUT'd SLURM job idempotent: any
+            # partial group left from a prior interrupted run gets wiped and rewritten
+            # rather than raising ContainsGroupError. Each (plate, well, site) is
+            # assigned to exactly one batch by design, so no concurrent writer can
+            # collide on the same image_id.
+            image_group = out_zarr.create_group(image_id, overwrite=True)
             image_group.create_array(name="label_image", data=segmentation_file["segmentation"][image_idx])
             image_group.create_array(name="single_cell_index", data=extraction_file["single_cell_index"][cell_indices])
             image_group.create_array(name="single_cell_data", data=extraction_file["single_cell_data"][cell_indices])
