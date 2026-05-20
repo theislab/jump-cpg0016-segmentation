@@ -1,5 +1,9 @@
 """Reaggregate Option A per-FOV zarr layout to Option B per-well layout.
 
+Schema matches the Option B spec in the GitHub issue (well-level grouping for Broad
+delivery; full source__batch__plate__well group names; src_row/cellid carried
+verbatim from Option A; FOV identity preserved via a separate fov_index array).
+
 Input  (Option A, per-FOV groups under one {plate}.zarr):
   {plate}.zarr/
     {source}__{batch}__{plate}__{well}__{fov}/
@@ -10,22 +14,19 @@ Input  (Option A, per-FOV groups under one {plate}.zarr):
 Output (Option B, per-well groups under {plate}.zarr in sibling tree):
   {plate}.zarr/
     attrs: source, batch, plate, fov_height, fov_width, n_wells, created_at
-    {well}/
-      attrs:
-        well, n_fovs, n_cells
-        fov_lut         list[str]   # full image_id per FOV slot:
-                                    # fov_lut[fov_idx] -> original
-                                    # "source__batch__plate__well__fov" string
+    {source}__{batch}__{plate}__{well}/         # fully qualified group name
+      attrs: well, n_fovs, n_cells
       label_image           uint32 (n_fovs, 2, H, W)  sharded per well
       single_cell_data      f16    (n_cells, 7, 150, 150)
-      single_cell_index     uint32 (n_cells, 2)       cols = [fov_idx, label_id]
+      single_cell_index     uint64 (n_cells, 2)  cols = [src_row, cellid]  (verbatim)
+      fov_index             uint32 (n_cells,)    1-indexed FOV number per cell
   channel_mapping.json (sibling, copied verbatim)
 
 Failure model:
   - Refuses to start if destination {plate}.zarr already exists.
   - Writes to {plate}.zarr.tmp/; renames at the very end (atomic on Lustre).
   - Any leftover .tmp from a prior crash is wiped before retry.
-  - Validates a sample of cells via (fov_idx, label_id) -> mask lookup before commit.
+  - Validates a sample of cells via (fov_index, cellid) -> mask lookup before commit.
 """
 
 import argparse
@@ -121,7 +122,11 @@ def reaggregate_plate(
 
     for well, fovs in well_to_fovs.items():
         module_logger.info(f"  well {well}: {len(fovs)} FOVs")
-        _write_well(src, dst, well, fovs, fov_height, fov_width)
+        _write_well(
+            src, dst,
+            plate_source, plate_batch, plate_name,
+            well, fovs, fov_height, fov_width,
+        )
 
     src_cm = src_plate_zarr.parent / "channel_mapping.json"
     if src_cm.exists():
@@ -140,6 +145,9 @@ def reaggregate_plate(
 def _write_well(
     src: zarr.Group,
     dst: zarr.Group,
+    plate_source: str,
+    plate_batch: str,
+    plate_name: str,
     well: str,
     fovs: list[tuple[int, str]],
     fov_height: int,
@@ -147,17 +155,15 @@ def _write_well(
 ) -> None:
     n_fovs = len(fovs)
     fov_group_names = [gn for _, gn in fovs]
+    fov_numbers = [fov_int for fov_int, _ in fovs]  # 1-indexed FOV from group name
     n_cells_per_fov = [int(src[gn]["single_cell_data"].shape[0]) for gn in fov_group_names]
     n_cells = sum(n_cells_per_fov)
 
-    well_group = dst.create_group(well)
+    well_group_name = f"{plate_source}__{plate_batch}__{plate_name}__{well}"
+    well_group = dst.create_group(well_group_name)
     well_group.attrs["well"] = well
     well_group.attrs["n_fovs"] = n_fovs
     well_group.attrs["n_cells"] = n_cells
-    # fov_lut maps positional fov_idx (0..n_fovs-1) -> original full image_id.
-    # Stored as a JSON attr (not a zarr array) because zarr v3 has no stable
-    # spec for fixed-length unicode dtypes yet; attrs are always portable.
-    well_group.attrs["fov_lut"] = fov_group_names
 
     label_shape = (n_fovs, 2, fov_height, fov_width)
     label_arr = well_group.create_array(
@@ -168,12 +174,14 @@ def _write_well(
         dtype=np.uint32,
         compressors=COMPRESSOR,
     )
-    for fov_idx, group_name in enumerate(fov_group_names):
-        label_arr[fov_idx] = np.asarray(src[group_name]["label_image"])
+    for axis0_idx, group_name in enumerate(fov_group_names):
+        label_arr[axis0_idx] = np.asarray(src[group_name]["label_image"])
 
     sample_scd = src[fov_group_names[0]]["single_cell_data"]
     crop_shape = tuple(int(x) for x in sample_scd.shape[1:])
     crop_dtype = sample_scd.dtype
+    sample_sci = src[fov_group_names[0]]["single_cell_index"]
+    sci_dtype = sample_sci.dtype  # carry source dtype (uint64) verbatim
 
     if n_cells > 0:
         shard_cells = min(SHARD_CELLS, n_cells)
@@ -185,24 +193,29 @@ def _write_well(
             dtype=crop_dtype,
             compressors=COMPRESSOR,
         )
+        # single_cell_index: [src_row, cellid] carried verbatim from broad/
         sci_arr = well_group.create_array(
             name="single_cell_index",
             shape=(n_cells, 2),
             chunks=(n_cells, 2),
+            dtype=sci_dtype,
+        )
+        # fov_index: 1-indexed FOV number per cell (e.g. [1,1,..,2,2,..,9,9,..])
+        fov_index_arr = well_group.create_array(
+            name="fov_index",
+            shape=(n_cells,),
+            chunks=(n_cells,),
             dtype=np.uint32,
         )
 
         offset = 0
-        for fov_idx, group_name in enumerate(fov_group_names):
-            n = n_cells_per_fov[fov_idx]
+        for axis0_idx, group_name in enumerate(fov_group_names):
+            n = n_cells_per_fov[axis0_idx]
             if n == 0:
                 continue
             scd_arr[offset:offset + n] = np.asarray(src[group_name]["single_cell_data"])
-            src_idx = np.asarray(src[group_name]["single_cell_index"])
-            new_idx = np.empty((n, 2), dtype=np.uint32)
-            new_idx[:, 0] = fov_idx
-            new_idx[:, 1] = src_idx[:, 1].astype(np.uint32)
-            sci_arr[offset:offset + n] = new_idx
+            sci_arr[offset:offset + n] = np.asarray(src[group_name]["single_cell_index"])
+            fov_index_arr[offset:offset + n] = fov_numbers[axis0_idx]
             offset += n
         assert offset == n_cells, f"cell offset mismatch: {offset} != {n_cells}"
     else:
@@ -216,6 +229,12 @@ def _write_well(
             name="single_cell_index",
             shape=(0, 2),
             chunks=(1, 2),
+            dtype=sci_dtype,
+        )
+        well_group.create_array(
+            name="fov_index",
+            shape=(0,),
+            chunks=(1,),
             dtype=np.uint32,
         )
 
@@ -234,16 +253,31 @@ def _validate_round_trip(dst: zarr.Group, n_samples: int) -> None:
     attempts = 0
     while n_checked < n_samples and attempts < n_samples * 4:
         attempts += 1
-        well = str(rng.choice(wells_with_cells))
-        wg = dst[well]
+        well_group_name = str(rng.choice(wells_with_cells))
+        wg = dst[well_group_name]
         n_cells = int(wg.attrs["n_cells"])
+        n_fovs = int(wg.attrs["n_fovs"])
         k = int(rng.integers(0, n_cells))
-        fov_idx, label_id = (int(v) for v in wg["single_cell_index"][k])
-        mask = np.asarray(wg["label_image"][fov_idx, 1]) == label_id
+        # cellid is col 1 of single_cell_index (col 0 = src_row, carried verbatim)
+        cellid = int(wg["single_cell_index"][k, 1])
+        fov_number = int(wg["fov_index"][k])  # 1-indexed
+        # Find the axis-0 slot in label_image whose FOV matches.
+        # Each FOV occupies a contiguous run in fov_index, so the unique sorted
+        # values in fov_index give the axis-0 ordering.
+        fov_index_arr = np.asarray(wg["fov_index"])
+        unique_fovs_sorted = sorted(set(int(x) for x in fov_index_arr))
+        if len(unique_fovs_sorted) != n_fovs:
+            raise RuntimeError(
+                f"{well_group_name}: n_fovs attr ({n_fovs}) disagrees with "
+                f"fov_index unique count ({len(unique_fovs_sorted)})"
+            )
+        axis0_idx = unique_fovs_sorted.index(fov_number)
+        mask = np.asarray(wg["label_image"][axis0_idx, 1]) == cellid
         if not mask.any():
             raise RuntimeError(
-                f"round-trip failed: well={well} cell_row={k} "
-                f"fov_idx={fov_idx} label_id={label_id} -> empty mask"
+                f"round-trip failed: well_group={well_group_name} cell_row={k} "
+                f"fov_number={fov_number} (axis0={axis0_idx}) cellid={cellid} "
+                f"-> empty mask"
             )
         n_checked += 1
     module_logger.info(f"round-trip OK on {n_checked} sampled cells")
