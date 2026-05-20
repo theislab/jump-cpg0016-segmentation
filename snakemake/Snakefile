@@ -12,8 +12,15 @@ rule all:
 
 rule aggregate:
     input:
-        expand("results/checkpoints/rechunk_broad/{source}.ckpt", source=sources)
+        ALL_REAGGREGATE_CHECKPOINTS
     output:
         "results/aggregated/aggregate.txt"
-    shell:
-        "echo {input} > {output}"
+    run:
+        # Don't dump every plate path to the txt — it can be tens of thousands of paths.
+        # Summary only; the per-plate checkpoints themselves are the audit trail.
+        sources_seen = sorted({p.split("/")[3] for p in input})
+        with open(output[0], "w") as f:
+            f.write(f"reaggregated {len(input)} plates across {len(sources_seen)} sources\n")
+            for s in sources_seen:
+                n = sum(1 for p in input if p.split("/")[3] == s)
+                f.write(f"  {s}: {n} plates\n")
