@@ -21,6 +21,24 @@ sources = samples["Metadata_Source"].unique()
 snakemake_batches = samples["snakemake_batch"].unique().tolist()
 snakemake_batch_sources = [f"{batch[0]}_{batch[1]}" for batch in [batch.split("_") for batch in snakemake_batches]]
 
+# Enumerate every (source, broad_batch, plate) tuple in the dataset so the final
+# target can depend on per-plate reaggregate_to_well checkpoints. broad_batch and
+# plate are parsed out of the `id` column (format: source__batch__plate__well__fov).
+# Model dir is currently always "cellpose" (hardcoded in scripts/create_broad_structure.py);
+# source04's broad/ also lives under cellpose/ — the cellpose_202404/ name only ever
+# applied to the now-disabled broad_compressed/ tree.
+_id_parts = samples["id"].str.split("__", expand=True)
+_per_plate = (
+    samples.assign(broad_batch=_id_parts[1], plate=_id_parts[2])
+    [["Metadata_Source", "broad_batch", "plate"]]
+    .drop_duplicates()
+    .itertuples(index=False, name=None)
+)
+ALL_REAGGREGATE_CHECKPOINTS = [
+    f"results/checkpoints/reaggregate_to_well/{source}/cellpose/{batch}/{plate}.ckpt"
+    for (source, batch, plate) in _per_plate
+]
+
 
 def get_agp_url(wildcards): return get_sample_property(wildcards,"s3_OrigAGP")
 def get_dna_url(wildcards): return get_sample_property(wildcards,"s3_OrigDNA")

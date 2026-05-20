@@ -6,8 +6,13 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-run = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
-dryrun = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs -n", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
+# --rerun-triggers mtime: don't re-run finished upstream rules just because the rule
+# code or env definition changed (e.g. after a git-pull deploying new rules into a
+# done-source checkout). Only re-run when output mtimes are actually stale relative
+# to inputs. Without this, deploying reaggregate_to_well into a done source would
+# cascade re-runs back through extract/segment/aggregate.
+run = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs --rerun-triggers mtime", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
+dryrun = { cmd = "snakemake --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs --rerun-triggers mtime -n", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
 unlock = { cmd = "snakemake --unlock --profile profile --use-conda --conda-prefix /ictstr01/groups/ml01/projects/2023_hackathon23_subcellular_spatial_niklas.schmacke/jump/envs", env = { PATH = "$PATH:/home/icb/tim.treis/miniforge3/bin" } }
 
 [dependencies]
